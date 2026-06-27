@@ -33,6 +33,14 @@ body[data-accent] { /* set inline by app.js */ }
 html { scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
+/* Lenis smooth scrolling — native scroll position, eased wheel input.
+   Lenis drives the position itself, so disable CSS smooth while it's on. */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-stopped { overflow: hidden; }
+.lenis.lenis-smooth iframe { pointer-events: none; }
+
 body {
   background: var(--bg);
   /* layered glow: a warm whisper of the accent top-left, cool depth below.

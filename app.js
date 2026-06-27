@@ -16,6 +16,9 @@
   var contentWork = railStart < 0 ? allWork : allWork.slice(0, railStart);
   var railWork    = railStart < 0 ? []      : allWork.slice(railStart);
 
+  // smooth-scroll instance (Lenis), created in start() unless reduced-motion
+  var lenis = null;
+
   var $rail    = document.getElementById("rail");
   var $content = document.getElementById("content");
   var $topId   = document.getElementById("topbar-id");
@@ -439,6 +442,7 @@
     if (s.description) card.appendChild(el("figcaption", "snippet-desc", esc(s.description)));
 
     var pre = el("pre", "snippet-pre");
+    pre.setAttribute("data-lenis-prevent", "");   // scroll code natively, not the page
     var codeEl = document.createElement("code");
     codeEl.className = "language-" + (s.lang || "plaintext");
     codeEl.textContent = code;            // safe: set as text, then highlight
@@ -578,6 +582,7 @@
     top.href = "#";
     top.addEventListener("click", function (e) {
       e.preventDefault();
+      if (lenis) { lenis.scrollTo(0); return; }
       window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
     });
     foot.appendChild(top);
@@ -619,7 +624,22 @@
     });
   }
 
+  /* ---- smooth wheel scrolling (Lenis) ------------------ */
+  function initSmoothScroll() {
+    if (reduce || !window.Lenis) return null;
+    var ls = new window.Lenis({
+      duration: 1.05,
+      easing: function (t) { return 1 - Math.pow(1 - t, 3); },  // easeOutCubic
+      smoothWheel: true,     // ease the mouse wheel
+      syncTouch: false,      // leave touch devices on native momentum
+    });
+    function raf(time) { ls.raf(time); requestAnimationFrame(raf); }
+    requestAnimationFrame(raf);
+    return ls;
+  }
+
   /* ---- start ------------------------------------------- */
+  lenis = initSmoothScroll();
   buildRail();
   buildContent();
   document.title = cfg.brand || cfg.name || "Portfolio";
