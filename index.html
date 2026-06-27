@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>portfolio blessedlua</title>
+  <meta name="description" content="portfolio blessedlua" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/vendor/highlight-theme.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <!-- transparent favicon so no logo shows next to the tab title -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'></svg>" />
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- floating announcements tab (sits in the side margin) -->
+  <aside class="announce" id="announce" hidden>
+    <button class="announce-btn" id="announce-btn" type="button" aria-expanded="false" aria-label="announcements">
+      <span class="announce-label">announcements</span>
+    </button>
+    <div class="announce-pop" id="announce-pop" role="menu" hidden></div>
+  </aside>
+
+  <div class="page">
+    <!-- thin meta bar -->
+    <div class="topbar">
+      <span class="topbar-id" id="topbar-id">—</span>
+      <span class="topbar-time"><span class="topbar-tz" id="tz"></span> <span id="clock">--:--:--</span></span>
+    </div>
+
+    <div class="layout">
+      <!-- left: identity rail -->
+      <aside class="rail">
+        <div class="rail-inner" id="rail">
+          <!-- injected -->
+        </div>
+      </aside>
+
+      <!-- right: content -->
+      <main class="content" id="content">
+        <!-- injected -->
+      </main>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="games-data.js"></script>
+  <script src="groups-data.js"></script>
+  <script src="websites-data.js"></script>
+  <script src="snippets-data.js"></script>
+  <script src="assets/vendor/highlight.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

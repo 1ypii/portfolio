@@ -1,0 +1,16 @@
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs / temp
+*.log
+node_modules/
+.cache/
+
+# Never commit secrets
+*.env
+.env
+credentials.txt
+*token*
+*.key

@@ -1,0 +1,9 @@
+# Cloudflare Pages headers
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer-when-downgrade
+  X-Frame-Options: SAMEORIGIN
+
+# Always re-fetch config so your edits show up immediately after deploy
+/config.js
+  Cache-Control: no-cache
