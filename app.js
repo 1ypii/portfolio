@@ -586,12 +586,36 @@
     $content.appendChild(f);
   }
 
-  /* ---- staggered load reveal --------------------------- */
+  /* ---- scroll-triggered reveal ------------------------- */
+  // Items animate in as they scroll into view. Whatever is already on
+  // screen at load cascades in with a small stagger; everything below the
+  // fold waits until you scroll to it.
   function reveal() {
-    var items = document.querySelectorAll(".reveal");
-    if (reduce) { items.forEach(function (n) { n.classList.add("in"); }); return; }
-    items.forEach(function (n, i) {
-      setTimeout(function () { n.classList.add("in"); }, 80 + i * 90);
+    var items = Array.prototype.slice.call(document.querySelectorAll(".reveal"));
+    if (reduce || !("IntersectionObserver" in window)) {
+      items.forEach(function (n) { n.classList.add("in"); });
+      return;
+    }
+
+    var io = new IntersectionObserver(function (entries, obs) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        var n = e.target;
+        var delay = Number(n.getAttribute("data-reveal-delay")) || 0;
+        setTimeout(function () { n.classList.add("in"); }, delay);
+        obs.unobserve(n);
+      });
+    }, { rootMargin: "0px 0px -10% 0px", threshold: 0.06 });
+
+    // stagger only the items visible on first paint for a clean load cascade
+    var vh = window.innerHeight || document.documentElement.clientHeight;
+    var visible = 0;
+    items.forEach(function (n) {
+      if (n.getBoundingClientRect().top < vh * 0.92) {
+        n.setAttribute("data-reveal-delay", String(70 + visible * 80));
+        visible++;
+      }
+      io.observe(n);
     });
   }
 
