@@ -8,6 +8,14 @@
   var cfg = window.CONFIG || {};
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  // work categories split between the two columns: a category flagged
+  // `rail: true` — and every category after it — renders in the left rail
+  // (below the snippets) instead of the main content column.
+  var allWork = (cfg.work || []).filter(Boolean);
+  var railStart = allWork.findIndex(function (g) { return g && g.rail; });
+  var contentWork = railStart < 0 ? allWork : allWork.slice(0, railStart);
+  var railWork    = railStart < 0 ? []      : allWork.slice(railStart);
+
   var $rail    = document.getElementById("rail");
   var $content = document.getElementById("content");
   var $topId   = document.getElementById("topbar-id");
@@ -169,6 +177,16 @@
       snips.forEach(function (s) { swrap.appendChild(buildSnippet(s)); });
       sb.appendChild(swrap);
       f.appendChild(sb);
+    }
+
+    // work categories flagged for the rail (e.g. websites) live below snippets
+    if (railWork.length) {
+      var rw = el("div", "rail-work");
+      railWork.forEach(function (group) {
+        var wk = buildWorkSection(group);
+        if (wk) rw.appendChild(wk);
+      });
+      if (rw.firstChild) f.appendChild(rw);
     }
 
     $rail.appendChild(f);
@@ -500,6 +518,38 @@
     return wrap;
   }
 
+  /* ---- one work category section (used by both columns) - */
+  function buildWorkSection(group) {
+    var galleries = (group.galleries || []).filter(function (g) {
+      return g && (g.videos || []).filter(Boolean).length;
+    });
+    var projects = (group.projects || []).filter(Boolean);
+    var snippets = (group.snippets || []).filter(Boolean);
+    if (!galleries.length && !projects.length && !snippets.length) return null;
+
+    var wk = el("section", "block reveal");
+    wk.appendChild(el("div", "category", esc(group.category || "Work")));
+
+    // labelled video sub-galleries (e.g. "Work", "Extra")
+    galleries.forEach(function (g) { wk.appendChild(buildGallery(g)); });
+
+    // code snippets
+    if (snippets.length) {
+      var swrap = el("div", "snippets");
+      snippets.forEach(function (s) { swrap.appendChild(buildSnippet(s)); });
+      wk.appendChild(swrap);
+    }
+
+    // titled projects ledger
+    if (projects.length) {
+      var list = el("div", "work");
+      projects.forEach(function (p) { list.appendChild(buildProject(p)); });
+      wk.appendChild(list);
+    }
+
+    return wk;
+  }
+
   /* ---- right column: about + work ---------------------- */
   function buildContent() {
     var f = document.createDocumentFragment();
@@ -515,36 +565,10 @@
       f.appendChild(ab);
     }
 
-    // work, grouped into categories
-    (cfg.work || []).forEach(function (group) {
-      var galleries = (group.galleries || []).filter(function (g) {
-        return g && (g.videos || []).filter(Boolean).length;
-      });
-      var projects = (group.projects || []).filter(Boolean);
-      var snippets = (group.snippets || []).filter(Boolean);
-      if (!galleries.length && !projects.length && !snippets.length) return;
-
-      var wk = el("section", "block reveal");
-      wk.appendChild(el("div", "category", esc(group.category || "Work")));
-
-      // labelled video sub-galleries (e.g. "Work", "Extra")
-      galleries.forEach(function (g) { wk.appendChild(buildGallery(g)); });
-
-      // code snippets
-      if (snippets.length) {
-        var swrap = el("div", "snippets");
-        snippets.forEach(function (s) { swrap.appendChild(buildSnippet(s)); });
-        wk.appendChild(swrap);
-      }
-
-      // titled projects ledger
-      if (projects.length) {
-        var list = el("div", "work");
-        projects.forEach(function (p) { list.appendChild(buildProject(p)); });
-        wk.appendChild(list);
-      }
-
-      f.appendChild(wk);
+    // work, grouped into categories (rail-flagged categories render elsewhere)
+    contentWork.forEach(function (group) {
+      var wk = buildWorkSection(group);
+      if (wk) f.appendChild(wk);
     });
 
     // footer

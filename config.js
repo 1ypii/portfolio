@@ -172,6 +172,9 @@ window.CONFIG = {
     },
     {
       category: "websites",
+      // `rail: true` moves this category — and every category after it —
+      // into the left rail, below the code snippets.
+      rail: true,
       // auto-enriched from websites-data.js (screenshot + title + description).
       // add `title` / `description` here to override the auto-detected ones.
       projects: [
