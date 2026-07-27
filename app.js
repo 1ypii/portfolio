@@ -154,7 +154,10 @@
     });
 
     var byHover = false;
-    v.addEventListener("play", function () { if (!byHover) v.dataset.user = "1"; });
+    v.addEventListener("play", function () {
+      if (!byHover) v.dataset.user = "1";
+      document.querySelectorAll("video").forEach(function (o) { if (o !== v) o.pause(); });
+    });
     v.addEventListener("volumechange", function () { v.dataset.user = "1"; });
     cell.addEventListener("mouseenter", function () {
       if (v.dataset.user || reduce) return;
