@@ -1,11 +1,11 @@
 :root {
-  --bg:   #0e1116;
-  --card: #151a21;
-  --ink:  #e7ecf2;
-  --mut:  #8b95a3;
-  --dim:  #5b6470;
-  --line: #232a33;
-  --rule: #36404d;
+  --bg:   #0a0a0a;
+  --card: #141414;
+  --ink:  #ededed;
+  --mut:  #979797;
+  --dim:  #646464;
+  --line: #242424;
+  --rule: #383838;
   --disp: "Archivo", system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
   --maxw: 1240px;
@@ -39,18 +39,6 @@ a { color: inherit; }
   padding: 0 clamp(18px, 4vw, 48px);
 }
 
-.topline {
-  display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 4px 16px;
-  padding: 18px 0 14px;
-  border-bottom: 1px solid var(--line);
-  font-family: var(--mono);
-  font-size: 12.5px;
-  color: var(--dim);
-}
-.topline-time { font-variant-numeric: tabular-nums; white-space: nowrap; }
-.topline-time #clock { color: var(--mut); }
-
 .announce {
   margin-top: 18px;
   border: 1px solid var(--rule);
@@ -76,11 +64,14 @@ a { color: inherit; }
 }
 
 .role {
-  margin-top: 18px;
-  font-size: clamp(16px, 2vw, 19px);
-  color: var(--mut);
-  max-width: 44ch;
+  font-weight: 800;
+  font-stretch: 112%;
+  font-size: clamp(24px, 4vw, 40px);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  max-width: 24ch;
 }
+.name + .role { margin-top: 18px; font-weight: 400; font-stretch: 100%; font-size: clamp(16px, 2vw, 19px); color: var(--mut); letter-spacing: 0; }
 .intro { margin-top: 10px; font-size: 15px; color: var(--dim); max-width: 52ch; }
 
 .stats {

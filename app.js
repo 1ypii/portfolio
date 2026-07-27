@@ -54,32 +54,7 @@
     return "<svg viewBox='0 0 24 24' aria-hidden='true'><path d='" + path + "'/></svg>";
   }
 
-  document.getElementById("brand").textContent = cfg.brand || cfg.name || "portfolio";
   document.title = cfg.brand || cfg.name || "portfolio";
-
-  var TZ = cfg.timezone || "Asia/Almaty";
-  (function () {
-    var label = cfg.timeLabel || "";
-    try {
-      var off = new Intl.DateTimeFormat("en-US", { timeZone: TZ, timeZoneName: "shortOffset" })
-        .formatToParts(new Date()).find(function (p) { return p.type === "timeZoneName"; });
-      if (off) label += (label ? " " : "") + off.value;
-    } catch (e) {}
-    document.getElementById("tz").textContent = label;
-  })();
-  function tick() {
-    var $c = document.getElementById("clock");
-    try {
-      $c.textContent = new Date().toLocaleTimeString("en-US", {
-        timeZone: TZ, hour: "numeric", minute: "2-digit", hour12: true,
-      }).replace(/\s/g, "").toUpperCase();
-    } catch (e) {
-      var d = new Date(), h = d.getHours(), ap = h < 12 ? "AM" : "PM";
-      h = h % 12 || 12;
-      $c.textContent = h + ":" + String(d.getMinutes()).padStart(2, "0") + ap;
-    }
-  }
-  tick(); setInterval(tick, 30000);
 
   (function () {
     var items = (cfg.announcements || []).filter(Boolean);
@@ -129,7 +104,7 @@
 
   function buildHero() {
     var f = document.createDocumentFragment();
-    f.appendChild(el("h1", "name", esc(cfg.name || cfg.brand || "portfolio")));
+    if (cfg.name) f.appendChild(el("h1", "name", esc(cfg.name)));
     if (cfg.role) f.appendChild(el("p", "role", esc(cfg.role)));
     (cfg.about || []).filter(Boolean).forEach(function (line) {
       f.appendChild(el("p", "intro", esc(line)));
