@@ -1,11 +1,11 @@
 :root {
-  --bg:   #151310;
-  --card: #1d1b17;
-  --ink:  #ece7dc;
-  --mut:  #9a9385;
-  --dim:  #6a6357;
-  --line: #2e2b25;
-  --rule: #443f36;
+  --bg:   #0e1116;
+  --card: #151a21;
+  --ink:  #e7ecf2;
+  --mut:  #8b95a3;
+  --dim:  #5b6470;
+  --line: #232a33;
+  --rule: #36404d;
   --disp: "Archivo", system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
   --maxw: 1240px;
