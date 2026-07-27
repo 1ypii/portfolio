@@ -142,6 +142,7 @@
     var cell = el("figure", "cell");
     var v = document.createElement("video");
     v.src = src + "#t=0.1";
+    if (/\.mp4$/i.test(src)) v.poster = src.replace(/\.mp4$/i, ".jpg");
     v.controls = true;
     v.preload = "none";
     v.playsInline = true;
@@ -313,6 +314,7 @@
 
   function section(title, count) {
     var sec = el("section", "sec");
+    sec.id = String(title).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     var head = el("header", "sec-head");
     head.appendChild(el("h2", null, esc(title)));
     if (count != null) head.appendChild(el("span", "sec-n", pad2(count)));
@@ -518,7 +520,35 @@
     $foot.appendChild(top);
   }
 
+  function buildNav() {
+    var nav = document.getElementById("secnav");
+    var secs = $main.querySelectorAll(".sec[id]");
+    if (!nav || !secs.length) return;
+
+    var links = {};
+    secs.forEach(function (s) {
+      var h = s.querySelector("h2");
+      var a = el("a", null, esc((h ? h.textContent : s.id).split(" ")[0]));
+      a.href = "#" + s.id;
+      links[s.id] = a;
+      nav.appendChild(a);
+    });
+    nav.hidden = false;
+
+    if ("IntersectionObserver" in window) {
+      var spy = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          nav.querySelectorAll("a").forEach(function (a) { a.classList.remove("is-on"); });
+          links[e.target.id].classList.add("is-on");
+        });
+      }, { rootMargin: "-30% 0px -60% 0px" });
+      secs.forEach(function (s) { spy.observe(s); });
+    }
+  }
+
   buildHero();
   buildMain();
+  buildNav();
   buildFoot();
 })();
