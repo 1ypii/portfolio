@@ -1,31 +1,13 @@
-/* ===========================================================
-   Renderer — reads window.CONFIG (config.js) and builds the page.
-   No frameworks, no build step.
-   =========================================================== */
 (function () {
   "use strict";
 
   var cfg = window.CONFIG || {};
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // work categories split between the two columns: a category flagged
-  // `rail: true` — and every category after it — renders in the left rail
-  // (below the snippets) instead of the main content column.
-  var allWork = (cfg.work || []).filter(Boolean);
-  var railStart = allWork.findIndex(function (g) { return g && g.rail; });
-  var contentWork = railStart < 0 ? allWork : allWork.slice(0, railStart);
-  var railWork    = railStart < 0 ? []      : allWork.slice(railStart);
+  var $hero = document.getElementById("hero");
+  var $main = document.getElementById("main");
+  var $foot = document.getElementById("foot");
 
-  // smooth-scroll instance (Lenis), created in start() unless reduced-motion
-  var lenis = null;
-
-  var $rail    = document.getElementById("rail");
-  var $content = document.getElementById("content");
-  var $topId   = document.getElementById("topbar-id");
-  var $clock   = document.getElementById("clock");
-  var $tz      = document.getElementById("tz");
-
-  /* ---- helpers ----------------------------------------- */
   function el(tag, cls, html) {
     var n = document.createElement(tag);
     if (cls) n.className = cls;
@@ -38,8 +20,6 @@
       .replace(/"/g, "&quot;");
   }
   function external(url) { return url && !/^(mailto:|tel:|#)/.test(url); }
-
-  // compact number: 145083 -> "145k", 73728423 -> "73.7m"
   function compact(n) {
     n = Number(n) || 0;
     if (n >= 1e9) return (n / 1e9).toFixed(1).replace(/\.0$/, "") + "b";
@@ -47,8 +27,8 @@
     if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, "") + "k";
     return String(n);
   }
+  function pad2(n) { return String(n).padStart(2, "0"); }
 
-  /* ---- brand icons (inline SVG paths, 24x24 viewBox) --- */
   var ICONS = {
     telegram: "M21.95 4.3 18.7 19.6c-.24 1.08-.88 1.35-1.78.84l-4.92-3.63-2.37 2.28c-.26.26-.48.48-.99.48l.35-5.02 9.13-8.25c.4-.35-.09-.55-.61-.2L6.63 13.2 1.78 11.7c-1.05-.33-1.07-1.05.22-1.56l18.96-7.3c.88-.32 1.65.2 1.36 1.46z",
     x:        "M18.24 2.25h3.31l-7.23 8.26L22.83 21.75h-6.66l-5.21-6.82-5.97 6.82H1.68l7.73-8.84L1.25 2.25h6.83l4.71 6.23 5.45-6.23zm-1.16 17.52h1.83L7.08 4.13H5.12l11.96 15.64z",
@@ -59,7 +39,6 @@
     youtube:  "M23.5 6.2a3.02 3.02 0 0 0-2.12-2.14C19.5 3.55 12 3.55 12 3.55s-7.5 0-9.38.51A3.02 3.02 0 0 0 .5 6.2C0 8.08 0 12 0 12s0 3.92.5 5.8a3.02 3.02 0 0 0 2.12 2.14c1.88.51 9.38.51 9.38.51s7.5 0 9.38-.51a3.02 3.02 0 0 0 2.12-2.14C24 15.92 24 12 24 12s0-3.92-.5-5.8zM9.6 15.6V8.4l6.2 3.6-6.2 3.6z",
     email:    "M2 4h20a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm10 7L2.2 5.4 12 11l9.8-5.6L12 11z",
   };
-  // Official Roblox verified badge (exact SVG from Roblox Corp via Wikimedia Commons)
   var VERIFIED_BADGE =
     "<svg class='verified' viewBox='0 0 28 28' fill='none' role='img' aria-label='Verified'>" +
     "<g clip-path='url(#rbxvb)'>" +
@@ -70,21 +49,15 @@
     "</svg>";
 
   function iconSvg(label) {
-    var key = String(label || "").toLowerCase().trim();
-    var path = ICONS[key];
+    var path = ICONS[String(label || "").toLowerCase().trim()];
     if (!path) return "";
-    return "<svg class='c-icon' viewBox='0 0 24 24' aria-hidden='true'><path d='" + path + "'/></svg>";
+    return "<svg viewBox='0 0 24 24' aria-hidden='true'><path d='" + path + "'/></svg>";
   }
 
-  /* ---- accent override --------------------------------- */
-  if (cfg.accent) document.documentElement.style.setProperty("--accent", cfg.accent);
-
-  /* ---- top bar: brand + live clock for a fixed place --- */
-  $topId.textContent = cfg.brand || cfg.name || "Portfolio";
+  document.getElementById("brand").textContent = cfg.brand || cfg.name || "portfolio";
+  document.title = cfg.brand || cfg.name || "portfolio";
 
   var TZ = cfg.timezone || "Asia/Almaty";
-
-  // build the timezone label with its GMT offset, e.g. "Almaty, Kazakhstan (GMT+5)"
   (function () {
     var label = cfg.timeLabel || "";
     try {
@@ -92,117 +65,380 @@
         .formatToParts(new Date()).find(function (p) { return p.type === "timeZoneName"; });
       if (off) label += (label ? " " : "") + off.value;
     } catch (e) {}
-    $tz.textContent = label;
+    document.getElementById("tz").textContent = label;
   })();
-
   function tick() {
+    var $c = document.getElementById("clock");
     try {
-      $clock.textContent = new Date().toLocaleTimeString("en-US", {
+      $c.textContent = new Date().toLocaleTimeString("en-US", {
         timeZone: TZ, hour: "numeric", minute: "2-digit", hour12: true,
       }).replace(/\s/g, "").toUpperCase();
     } catch (e) {
-      var d = new Date();
-      var h = d.getHours(), ap = h < 12 ? "AM" : "PM";
+      var d = new Date(), h = d.getHours(), ap = h < 12 ? "AM" : "PM";
       h = h % 12 || 12;
-      $clock.textContent = h + ":" + String(d.getMinutes()).padStart(2, "0") + ap;
+      $c.textContent = h + ":" + String(d.getMinutes()).padStart(2, "0") + ap;
     }
   }
-  tick(); setInterval(tick, 1000);
+  tick(); setInterval(tick, 30000);
 
-  /* ---- announcements tab ------------------------------- */
-  (function announcements() {
+  (function () {
     var items = (cfg.announcements || []).filter(Boolean);
-    var wrap = document.getElementById("announce");
-    if (!wrap) return;
-
-    var btn = document.getElementById("announce-btn");
-    var pop = document.getElementById("announce-pop");
-
-    var empty = !items.length;
-    var list = empty ? ["nothing so far"] : items;
-    list.forEach(function (a) {
-      var line = document.createElement("div");
-      line.className = empty ? "announce-item announce-empty" : "announce-item";
-      line.setAttribute("role", "menuitem");
-      line.textContent = a;
-      pop.appendChild(line);
-    });
-    wrap.hidden = false;
-
-    function open()  { pop.hidden = false; btn.setAttribute("aria-expanded", "true"); }
-    function close() { pop.hidden = true;  btn.setAttribute("aria-expanded", "false"); }
-    btn.addEventListener("click", function (e) { e.stopPropagation(); pop.hidden ? open() : close(); });
-    document.addEventListener("click", function (e) { if (!wrap.contains(e.target)) close(); });
-    document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
+    if (!items.length) return;
+    var box = document.getElementById("announce");
+    box.appendChild(el("span", "announce-tag", "announcements"));
+    items.forEach(function (a) { box.appendChild(el("div", null, esc(a))); });
+    box.hidden = false;
   })();
 
-  /* ---- left rail: identity + contact ------------------- */
-  function buildRail() {
-    var f = document.createDocumentFragment();
-
-    // heading: the name if set, otherwise the role acts as the heading
-    var heading = cfg.name || cfg.role;
-    if (heading) f.appendChild(el("h1", "name reveal", esc(heading)));
-    // only show role as a separate line when there's also a name above it
-    if (cfg.name && (cfg.role || cfg.tagline)) {
-      f.appendChild(el("p", "role reveal", esc(cfg.role || cfg.tagline)));
-    }
-    if (cfg.now) {
-      var now = el("div", "now reveal");
-      now.appendChild(el("span", "now-dot"));
-      now.appendChild(document.createTextNode(cfg.now));
-      f.appendChild(now);
-    }
-
-    var contact = el("nav", "contact reveal");
-    (cfg.socials || []).forEach(function (s) {
-      var a = el("a");
-      a.href = s.url || "#";
-      if (external(s.url)) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
-      a.innerHTML =
-        iconSvg(s.label) +
-        "<span class='c-label'>" + esc(s.label) + "</span>" +
-        "<span class='c-handle'>" + esc(s.handle || s.url || "") + "</span>" +
-        "<span class='c-arrow' aria-hidden='true'>" + (external(s.url) ? "↗" : "→") + "</span>";
-      contact.appendChild(a);
-    });
-    f.appendChild(contact);
-
-    var form = buildContactForm();
-    if (form) f.appendChild(form);
-
-    // code snippets fill the rail below the contact form
-    var snips = (cfg.snippets || []).filter(Boolean);
-    if (snips.length) {
-      var sb = el("div", "rail-snippets");
-      sb.appendChild(el("div", "eyebrow", snips.length > 1 ? "Code snippets" : "Code snippet"));
-      var swrap = el("div", "snippets");
-      snips.forEach(function (s) { swrap.appendChild(buildSnippet(s)); });
-      sb.appendChild(swrap);
-      f.appendChild(sb);
-    }
-
-    // work categories flagged for the rail (e.g. websites) live below snippets
-    if (railWork.length) {
-      var rw = el("div", "rail-work");
-      railWork.forEach(function (group) {
-        var wk = buildWorkSection(group);
-        if (wk) rw.appendChild(wk);
-      });
-      if (rw.firstChild) f.appendChild(rw);
-    }
-
-    $rail.appendChild(f);
+  function placeIdFromUrl(url) {
+    var m = String(url || "").match(/roblox\.com\/games\/(\d+)/);
+    return m ? m[1] : null;
+  }
+  function groupIdFromUrl(url) {
+    var m = String(url || "").match(/roblox\.com\/communities\/(\d+)/);
+    return m ? m[1] : null;
+  }
+  function siteData(url) {
+    var w = window.WEBSITES_DATA || {};
+    if (w[url]) return w[url];
+    var alt = url && (url.charAt(url.length - 1) === "/" ? url.slice(0, -1) : url + "/");
+    return (alt && w[alt]) || null;
   }
 
-  /* ---- contact form (emails via Web3Forms, no backend) -- */
+  var work = (cfg.work || []).filter(Boolean);
+
+  function tally() {
+    var clips = 0, games = 0, groups = 0, visits = 0;
+    work.forEach(function (g) {
+      (g.galleries || []).forEach(function (gal) {
+        clips += (gal.videos || []).filter(Boolean).length;
+      });
+      (g.projects || []).filter(Boolean).forEach(function (p) {
+        var pid = placeIdFromUrl(p.url);
+        if (pid) {
+          games++;
+          var d = (window.GAMES_DATA || {})[pid];
+          if (d && d.visits) visits += Number(d.visits) || 0;
+          return;
+        }
+        if (groupIdFromUrl(p.url)) groups++;
+      });
+    });
+    return { clips: clips, games: games, groups: groups, visits: visits };
+  }
+
+  function buildHero() {
+    var f = document.createDocumentFragment();
+    f.appendChild(el("h1", "name", esc(cfg.name || cfg.brand || "portfolio")));
+    if (cfg.role) f.appendChild(el("p", "role", esc(cfg.role)));
+    (cfg.about || []).filter(Boolean).forEach(function (line) {
+      f.appendChild(el("p", "intro", esc(line)));
+    });
+
+    var t = tally();
+    var bits = [];
+    if (t.clips)  bits.push("<b>" + t.clips + "</b> clips");
+    if (t.games)  bits.push("<b>" + t.games + "</b> games");
+    if (t.visits) bits.push("<b>" + compact(t.visits) + "+</b> combined visits");
+    if (t.groups) bits.push("<b>" + t.groups + "</b> studios");
+    if (bits.length) {
+      f.appendChild(el("div", "stats", bits.join("<span class='sep'>/</span>")));
+    }
+
+    var socials = (cfg.socials || []).filter(Boolean);
+    if (socials.length) {
+      var chips = el("nav", "chips");
+      socials.forEach(function (s) {
+        var a = el("a", "chip");
+        a.href = s.url || "#";
+        if (external(s.url)) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
+        a.innerHTML = iconSvg(s.label) + "<span>" + esc(s.handle || s.label) + "</span>";
+        chips.appendChild(a);
+      });
+      f.appendChild(chips);
+    }
+    $hero.appendChild(f);
+  }
+
+  var lazyIO = ("IntersectionObserver" in window)
+    ? new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var v = e.target;
+          v.preload = "metadata";
+          v.load();
+          lazyIO.unobserve(v);
+        });
+      }, { rootMargin: "300px 0px" })
+    : null;
+
+  function buildCell(src, caption, label) {
+    var cell = el("figure", "cell");
+    var v = document.createElement("video");
+    v.src = src + "#t=0.1";
+    v.controls = true;
+    v.preload = "none";
+    v.playsInline = true;
+    v.setAttribute("controlslist", "nodownload");
+    v.setAttribute("aria-label", (label ? label + " — " : "") + "demo video");
+
+    v.addEventListener("error", function () {
+      cell.innerHTML = "<span class='cell-missing'>video unavailable — " + esc(src) + "</span>";
+    });
+
+    var byHover = false;
+    v.addEventListener("play", function () { if (!byHover) v.dataset.user = "1"; });
+    v.addEventListener("volumechange", function () { v.dataset.user = "1"; });
+    cell.addEventListener("mouseenter", function () {
+      if (v.dataset.user || reduce) return;
+      byHover = true;
+      v.muted = true;
+      var p = v.play();
+      if (p && p.catch) p.catch(function () {});
+    });
+    cell.addEventListener("mouseleave", function () {
+      byHover = false;
+      if (v.dataset.user) return;
+      v.pause();
+    });
+
+    cell.appendChild(v);
+    if (caption) cell.appendChild(el("figcaption", "cell-cap", esc(caption)));
+    if (lazyIO) lazyIO.observe(v); else v.preload = "metadata";
+    return cell;
+  }
+
+  function buildGallery(g) {
+    var vids = (g.videos || []).filter(Boolean);
+    var sec = el("div", "gallery");
+    if (g.label) sec.appendChild(el("div", "sublabel", "<b>" + esc(g.label) + "</b> — " + vids.length));
+    var grid = el("div", "reel");
+    vids.forEach(function (item, i) {
+      var p = (typeof item === "string") ? { video: item } : item;
+      grid.appendChild(buildCell(p.video, p.caption, (g.label || "clip") + " " + (i + 1)));
+    });
+    sec.appendChild(grid);
+    return sec;
+  }
+
+  function buildGameRow(p, g) {
+    var row = el("a", "row");
+    row.href = p.url;
+    row.target = "_blank"; row.rel = "noopener noreferrer";
+
+    if (g.thumb) {
+      var img = el("img", "row-thumb");
+      img.src = g.thumb; img.loading = "lazy"; img.alt = "";
+      row.appendChild(img);
+    } else {
+      row.appendChild(el("span", "row-thumb"));
+    }
+
+    var body = el("div", "row-body");
+    var top = el("div", "row-top");
+    top.appendChild(el("span", "row-title", esc(p.title || g.name)));
+    top.appendChild(el("span", "row-arrow", "↗"));
+    body.appendChild(top);
+
+    if (g.creator && g.creator.name) {
+      body.appendChild(el("div", "row-by",
+        "by " + esc(g.creator.name) +
+        (g.creator.verified ? " " + VERIFIED_BADGE : "") +
+        (g.creator.type === "Group" ? " <span class='grp'>group</span>" : "")));
+    }
+    if (g.visits != null || g.playing != null) {
+      var stats = el("div", "row-stats");
+      if (g.visits != null) stats.appendChild(el("span", null, "<b>" + compact(g.visits) + "</b> visits"));
+      if (g.playing != null) stats.appendChild(el("span", null, "<b>" + compact(g.playing) + "</b> ccu"));
+      body.appendChild(stats);
+    }
+    if (g.desc) body.appendChild(el("p", "row-desc", esc(g.desc)));
+    if (p.description) body.appendChild(el("p", "row-note", esc(p.description)));
+
+    row.appendChild(body);
+    return row;
+  }
+
+  function buildGroupRow(p, g) {
+    var row = el("article", "row");
+
+    if (g.thumb) {
+      var img = el("img", "row-thumb");
+      img.src = g.thumb; img.loading = "lazy"; img.alt = "";
+      row.appendChild(img);
+    } else {
+      row.appendChild(el("span", "row-thumb"));
+    }
+
+    var body = el("div", "row-body");
+    var top = el("div", "row-top");
+    var title = el("span", "row-title");
+    var a = el("a", null, esc(p.title || g.name || "group"));
+    a.href = p.url; a.target = "_blank"; a.rel = "noopener noreferrer";
+    title.appendChild(a);
+    if (g.verified) title.insertAdjacentHTML("beforeend", " " + VERIFIED_BADGE);
+    top.appendChild(title);
+    top.appendChild(el("span", "row-arrow", "↗"));
+    body.appendChild(top);
+
+    if (g.members) body.appendChild(el("div", "row-stats", "<span><b>" + compact(g.members) + "</b> members</span>"));
+    if (g.desc) body.appendChild(el("p", "row-desc", esc(g.desc)));
+    if (g.proof) {
+      var pf = el("a", "proof-link", "view proof ↗");
+      pf.href = g.proof; pf.target = "_blank"; pf.rel = "noopener noreferrer";
+      body.appendChild(pf);
+    }
+
+    row.appendChild(body);
+    return row;
+  }
+
+  function buildSiteCard(p, s) {
+    var card = el("a", "site-card");
+    card.href = p.url; card.target = "_blank"; card.rel = "noopener noreferrer";
+    if (s.image) {
+      var img = el("img", "site-shot");
+      img.src = s.image; img.loading = "lazy"; img.alt = "";
+      card.appendChild(img);
+    }
+    var meta = el("div", "site-meta");
+    var top = el("div", "row-top");
+    top.appendChild(el("span", "row-title", esc(p.title || s.title || s.domain)));
+    top.appendChild(el("span", "row-arrow", "↗"));
+    meta.appendChild(top);
+    if (s.domain) meta.appendChild(el("div", "site-domain", esc(s.domain)));
+    var d = p.description || s.desc;
+    if (d) meta.appendChild(el("p", "row-desc", esc(d)));
+    card.appendChild(meta);
+    return card;
+  }
+
+  function buildPlainRow(p) {
+    var row = el("article", "row");
+    var body = el("div", "row-body");
+    var top = el("div", "row-top");
+    var title = el("span", "row-title");
+    if (p.url) {
+      var a = el("a", null, esc(p.title || "untitled"));
+      a.href = p.url;
+      if (external(p.url)) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
+      title.appendChild(a);
+      top.appendChild(title);
+      top.appendChild(el("span", "row-arrow", external(p.url) ? "↗" : "→"));
+    } else {
+      title.textContent = p.title || "untitled";
+      top.appendChild(title);
+    }
+    body.appendChild(top);
+    if (p.description) body.appendChild(el("p", "row-desc", esc(p.description)));
+    row.appendChild(body);
+    return row;
+  }
+
+  function buildProject(p) {
+    var pid = placeIdFromUrl(p.url);
+    if (pid && (window.GAMES_DATA || {})[pid]) return buildGameRow(p, window.GAMES_DATA[pid]);
+    var gid = groupIdFromUrl(p.url);
+    if (gid && (window.GROUPS_DATA || {})[gid]) return buildGroupRow(p, window.GROUPS_DATA[gid]);
+    var sd = siteData(p.url);
+    if (sd) return buildSiteCard(p, sd);
+    return buildPlainRow(p);
+  }
+
+  function section(title, count) {
+    var sec = el("section", "sec");
+    var head = el("header", "sec-head");
+    head.appendChild(el("h2", null, esc(title)));
+    if (count != null) head.appendChild(el("span", "sec-n", pad2(count)));
+    sec.appendChild(head);
+    return sec;
+  }
+
+  function buildWorkSection(group) {
+    var galleries = (group.galleries || []).filter(function (g) {
+      return g && (g.videos || []).filter(Boolean).length;
+    });
+    var projects = (group.projects || []).filter(Boolean);
+    if (!galleries.length && !projects.length) return null;
+
+    var count = projects.length;
+    galleries.forEach(function (g) { count += (g.videos || []).filter(Boolean).length; });
+
+    var sec = section(group.category || "work", count);
+    galleries.forEach(function (g) { sec.appendChild(buildGallery(g)); });
+
+    if (projects.length) {
+      var allGroups = projects.every(function (p) { return groupIdFromUrl(p.url); });
+      var list = el("div", allGroups ? "rows duo" : "rows");
+      projects.forEach(function (p) { list.appendChild(buildProject(p)); });
+      sec.appendChild(list);
+    }
+    return sec;
+  }
+
+  function buildSnippets() {
+    var snips = (cfg.snippets || []).filter(Boolean);
+    if (!snips.length) return null;
+
+    var sec = section("snippets", snips.length);
+    var tabs = el("div", "tabs");
+    tabs.setAttribute("role", "tablist");
+    sec.appendChild(tabs);
+
+    var panels = [];
+    snips.forEach(function (s, i) {
+      var tab = el("button", "tab", esc(s.lang || "code"));
+      tab.type = "button";
+      tab.setAttribute("role", "tab");
+      tabs.appendChild(tab);
+
+      var code = (window.SNIPPETS || {})[s.file] || s.code || "";
+      var panel = el("figure", "snip");
+      panel.hidden = i !== 0;
+      if (i === 0) tab.classList.add("is-on");
+
+      var bar = el("div", "snip-bar");
+      if (s.description) bar.appendChild(el("figcaption", "snip-desc", esc(s.description)));
+      var copy = el("button", "snip-copy", "copy");
+      copy.type = "button";
+      bar.appendChild(copy);
+      panel.appendChild(bar);
+
+      var pre = el("pre", "snip-pre");
+      var codeEl = document.createElement("code");
+      codeEl.className = "language-" + (s.lang || "plaintext");
+      codeEl.textContent = code;
+      pre.appendChild(codeEl);
+      panel.appendChild(pre);
+      if (window.hljs) { try { window.hljs.highlightElement(codeEl); } catch (e) {} }
+
+      copy.addEventListener("click", function () {
+        if (!navigator.clipboard) return;
+        navigator.clipboard.writeText(code).then(function () {
+          copy.textContent = "copied"; copy.classList.add("done");
+          setTimeout(function () { copy.textContent = "copy"; copy.classList.remove("done"); }, 1400);
+        });
+      });
+
+      tab.addEventListener("click", function () {
+        tabs.querySelectorAll(".tab").forEach(function (t) { t.classList.remove("is-on"); });
+        panels.forEach(function (p) { p.hidden = true; });
+        tab.classList.add("is-on");
+        panel.hidden = false;
+      });
+
+      panels.push(panel);
+      sec.appendChild(panel);
+    });
+    return sec;
+  }
+
   function buildContactForm() {
     var c = cfg.contact || {};
-    if (!c) return null;
     var key = (c.accessKey || "").trim();
     var keyReady = key && !/PASTE/i.test(key);
 
-    var form = el("form", "cform reveal");
+    var form = el("form", "cform");
     form.setAttribute("novalidate", "");
 
     var ta = document.createElement("textarea");
@@ -215,14 +451,13 @@
     soc.placeholder = "your socials so i can add you back";
     form.appendChild(soc);
 
-    // honeypot — bots fill this, humans never see it
     var honey = document.createElement("input");
     honey.type = "text"; honey.name = "_honey"; honey.tabIndex = -1;
     honey.autocomplete = "off"; honey.setAttribute("aria-hidden", "true");
     honey.className = "cform-honey";
     form.appendChild(honey);
 
-    var btn = el("button", "cform-btn", esc(c.button || "send message"));
+    var btn = el("button", "cform-btn", esc(c.button || "send"));
     btn.type = "submit";
     form.appendChild(btn);
 
@@ -237,7 +472,7 @@
 
     form.addEventListener("submit", function (e) {
       e.preventDefault();
-      if (honey.value) return;                       // silently drop bots
+      if (honey.value) return;
       if (!keyReady) { setStatus("form isnt set up yet add your web3forms key in config", "err"); return; }
       if (!ta.value.trim()) { setStatus("please write a message first", "err"); ta.focus(); return; }
 
@@ -271,377 +506,53 @@
     return form;
   }
 
-  /* ---- enriched Roblox game card ----------------------- */
-  function placeIdFromUrl(url) {
-    var m = String(url || "").match(/roblox\.com\/games\/(\d+)/);
-    return m ? m[1] : null;
-  }
-  function buildGameCard(p, g) {
-    var card = el("a", "proj game");
-    card.href = p.url;
-    card.target = "_blank"; card.rel = "noopener noreferrer";
+  function buildContact() {
+    var socials = (cfg.socials || []).filter(Boolean);
+    var sec = section("contact", null);
+    var grid = el("div", "contact-grid");
 
-    if (g.thumb) {
-      var img = el("img", "game-thumb");
-      img.src = g.thumb; img.loading = "lazy"; img.alt = "";
-      card.appendChild(img);
-    } else {
-      card.appendChild(el("span", "game-thumb game-thumb--empty"));
-    }
-
-    var body = el("div", "game-body");
-    var top = el("div", "proj-top");
-    top.appendChild(el("span", "proj-title", esc(p.title || g.name)));
-    top.appendChild(el("span", "proj-arrow", "↗"));
-    body.appendChild(top);
-
-    if (g.creator && g.creator.name) {
-      var by = el("div", "game-by");
-      by.innerHTML = "by " + esc(g.creator.name) +
-        (g.creator.verified ? " " + VERIFIED_BADGE : "") +
-        (g.creator.type === "Group" ? " <span class='grp'>group</span>" : "");
-      body.appendChild(by);
-    }
-
-    if (g.visits != null || g.playing != null) {
-      var stats = el("div", "game-stats");
-      if (g.visits != null) stats.appendChild(el("span", null, compact(g.visits) + " visits"));
-      if (g.playing != null) stats.appendChild(el("span", null, compact(g.playing) + " ccu"));
-      body.appendChild(stats);
-    }
-
-    if (g.desc) body.appendChild(el("p", "game-desc", esc(g.desc)));
-    if (p.description) body.appendChild(el("p", "game-note", esc(p.description)));
-
-    card.appendChild(body);
-    return card;
-  }
-
-  /* ---- enriched Roblox group/community card ------------ */
-  function groupIdFromUrl(url) {
-    var m = String(url || "").match(/roblox\.com\/communities\/(\d+)/);
-    return m ? m[1] : null;
-  }
-  function buildGroupCard(p, g) {
-    var card = el("article", "proj game group");
-
-    if (g.thumb) {
-      var img = el("img", "game-thumb");
-      img.src = g.thumb; img.loading = "lazy"; img.alt = "";
-      card.appendChild(img);
-    } else {
-      card.appendChild(el("span", "game-thumb game-thumb--empty"));
-    }
-
-    var body = el("div", "game-body");
-    var top = el("div", "proj-top");
-    var title = el("span", "proj-title");
-    var a = el("a", null, esc(p.title || g.name || "Group"));
-    a.href = p.url; a.target = "_blank"; a.rel = "noopener noreferrer";
-    title.appendChild(a);
-    if (g.verified) title.insertAdjacentHTML("beforeend", " " + VERIFIED_BADGE);
-    top.appendChild(title);
-    top.appendChild(el("span", "proj-arrow", "↗"));
-    body.appendChild(top);
-
-    if (g.members) body.appendChild(el("div", "game-by", Number(g.members).toLocaleString() + " members"));
-    if (g.desc) body.appendChild(el("p", "game-desc", esc(g.desc)));
-    if (g.proof) {
-      var pf = el("a", "proof-link", "view proof ↗");
-      pf.href = g.proof; pf.target = "_blank"; pf.rel = "noopener noreferrer";
-      body.appendChild(pf);
-    }
-
-    card.appendChild(body);
-    return card;
-  }
-
-  /* ---- enriched website card (screenshot preview) ------ */
-  function siteData(url) {
-    var w = window.WEBSITES_DATA || {};
-    if (w[url]) return w[url];
-    var alt = url && (url.charAt(url.length - 1) === "/" ? url.slice(0, -1) : url + "/");
-    return (alt && w[alt]) || null;
-  }
-  function buildWebsiteCard(p, s) {
-    var card = el("a", "proj site");
-    card.href = p.url; card.target = "_blank"; card.rel = "noopener noreferrer";
-
-    if (s.image) {
-      var img = el("img", "site-shot");
-      img.src = s.image; img.loading = "lazy"; img.alt = "";
-      card.appendChild(img);
-    }
-    var meta = el("div", "site-meta");
-    var top = el("div", "proj-top");
-    top.appendChild(el("span", "proj-title", esc(p.title || s.title || s.domain)));
-    top.appendChild(el("span", "proj-arrow", "↗"));
-    meta.appendChild(top);
-    if (s.domain) meta.appendChild(el("div", "site-domain", esc(s.domain)));
-    var d = p.description || s.desc;
-    if (d) meta.appendChild(el("p", "game-desc", esc(d)));
-    card.appendChild(meta);
-    return card;
-  }
-
-  /* ---- a single project row ---------------------------- */
-  function buildProject(p) {
-    // Roblox game with fetched data? render a rich card
-    var pid = placeIdFromUrl(p.url);
-    if (pid && (window.GAMES_DATA || {})[pid]) return buildGameCard(p, window.GAMES_DATA[pid]);
-
-    // Roblox group/community with fetched data?
-    var gid = groupIdFromUrl(p.url);
-    if (gid && (window.GROUPS_DATA || {})[gid]) return buildGroupCard(p, window.GROUPS_DATA[gid]);
-
-    // website with a screenshot preview?
-    var sd = siteData(p.url);
-    if (sd) return buildWebsiteCard(p, sd);
-
-    var item = el("article", "proj");
-
-    var top = el("div", "proj-top");
-    var title = el("span", "proj-title");
-    if (p.url) {
-      var a = el("a", null, esc(p.title || "Untitled"));
-      a.href = p.url;
-      if (external(p.url)) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
-      title.appendChild(a);
-      title.appendChild(el("span", "proj-arrow", external(p.url) ? " ↗" : " →"));
-    } else {
-      title.textContent = p.title || "Untitled";
-    }
-    top.appendChild(title);
-    if (p.year) top.appendChild(el("span", "proj-year", esc(p.year)));
-    item.appendChild(top);
-
-    if (p.description) item.appendChild(el("p", "proj-desc", esc(p.description)));
-
-    if (p.video) item.appendChild(buildVideo(p));
-
-    if (p.tags && p.tags.length) {
-      var tags = el("div", "proj-tags");
-      p.tags.forEach(function (t) { tags.appendChild(el("span", null, esc(t))); });
-      item.appendChild(tags);
-    }
-    return item;
-  }
-
-  /* ---- a code snippet card ----------------------------- */
-  function buildSnippet(s) {
-    var code = (window.SNIPPETS || {})[s.file] || s.code || "";
-    var card = el("figure", "snippet");
-
-    var bar = el("div", "snippet-bar");
-    bar.appendChild(el("span", "snippet-lang", esc(s.lang || "code")));
-    var copy = el("button", "snippet-copy", "copy");
-    copy.type = "button";
-    bar.appendChild(copy);
-    card.appendChild(bar);
-
-    if (s.description) card.appendChild(el("figcaption", "snippet-desc", esc(s.description)));
-
-    var pre = el("pre", "snippet-pre");
-    pre.setAttribute("data-lenis-prevent", "");   // scroll code natively, not the page
-    var codeEl = document.createElement("code");
-    codeEl.className = "language-" + (s.lang || "plaintext");
-    codeEl.textContent = code;            // safe: set as text, then highlight
-    pre.appendChild(codeEl);
-    card.appendChild(pre);
-
-    if (window.hljs) { try { window.hljs.highlightElement(codeEl); } catch (e) {} }
-
-    copy.addEventListener("click", function () {
-      if (!navigator.clipboard) return;
-      navigator.clipboard.writeText(code).then(function () {
-        copy.textContent = "copied"; copy.classList.add("done");
-        setTimeout(function () { copy.textContent = "copy"; copy.classList.remove("done"); }, 1400);
+    if (socials.length) {
+      var list = el("nav", "contact-list");
+      socials.forEach(function (s) {
+        var a = el("a");
+        a.href = s.url || "#";
+        if (external(s.url)) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
+        a.innerHTML = iconSvg(s.label) +
+          "<span class='c-label'>" + esc(s.label) + "</span>" +
+          "<span class='c-handle'>" + esc(s.handle || s.url || "") + "</span>";
+        list.appendChild(a);
       });
-    });
-
-    return card;
-  }
-
-  /* ---- a labelled video gallery (grid) ----------------- */
-  function buildGallery(g) {
-    var sec = el("div", "gallery");
-    if (g.label) sec.appendChild(el("div", "subhead", esc(g.label)));
-    var grid = el("div", "video-grid");
-    (g.videos || []).filter(Boolean).forEach(function (item, i) {
-      // item can be a "path" string or { video, poster, caption }
-      var p = (typeof item === "string") ? { video: item } : item;
-      var cell = buildVideo({
-        video: p.video, poster: p.poster,
-        title: (g.label ? g.label + " " : "") + (i + 1),
-        caption: p.caption,
-      });
-      grid.appendChild(cell);
-    });
+      grid.appendChild(list);
+    }
+    grid.appendChild(buildContactForm());
     sec.appendChild(grid);
     return sec;
   }
 
-  /* ---- lazy loader: only fetch a video once near view --- */
-  var lazyIO = ("IntersectionObserver" in window)
-    ? new IntersectionObserver(function (entries) {
-        entries.forEach(function (e) {
-          if (!e.isIntersecting) return;
-          var v = e.target;
-          v.preload = "metadata";   // pull just enough to paint a thumbnail
-          v.load();
-          lazyIO.unobserve(v);
-        });
-      }, { rootMargin: "300px 0px" })
-    : null;
-
-  /* ---- click-to-play video ----------------------------- */
-  function buildVideo(p) {
-    var wrap = el("figure", "proj-video");
-    var v = document.createElement("video");
-    // no poster? nudge to 0.1s so the browser paints a first-frame thumbnail
-    v.src = p.poster ? p.video : p.video + "#t=0.1";
-    v.controls = true;
-    v.preload = "none";          // deferred — load() fires when scrolled near
-    v.playsInline = true;
-    v.setAttribute("controlslist", "nodownload");
-    if (p.poster) v.poster = p.poster;
-    var label = (p.title ? p.title + " — " : "") + "demo video";
-    v.setAttribute("aria-label", label);
-
-    // graceful fallback if the file is missing / unsupported
-    v.addEventListener("error", function () {
-      wrap.classList.add("proj-video--missing");
-      wrap.innerHTML = "<span class='video-missing'>video unavailable — " +
-        esc(p.video) + "</span>";
-    });
-
-    wrap.appendChild(v);
-    if (p.caption) wrap.appendChild(el("figcaption", "video-cap", esc(p.caption)));
-
-    if (lazyIO) lazyIO.observe(v); else { v.preload = "metadata"; }
-    return wrap;
-  }
-
-  /* ---- one work category section (used by both columns) - */
-  function buildWorkSection(group) {
-    var galleries = (group.galleries || []).filter(function (g) {
-      return g && (g.videos || []).filter(Boolean).length;
-    });
-    var projects = (group.projects || []).filter(Boolean);
-    var snippets = (group.snippets || []).filter(Boolean);
-    if (!galleries.length && !projects.length && !snippets.length) return null;
-
-    var wk = el("section", "block reveal");
-    wk.appendChild(el("div", "category", esc(group.category || "Work")));
-
-    // labelled video sub-galleries (e.g. "Work", "Extra")
-    galleries.forEach(function (g) { wk.appendChild(buildGallery(g)); });
-
-    // code snippets
-    if (snippets.length) {
-      var swrap = el("div", "snippets");
-      snippets.forEach(function (s) { swrap.appendChild(buildSnippet(s)); });
-      wk.appendChild(swrap);
-    }
-
-    // titled projects ledger
-    if (projects.length) {
-      var list = el("div", "work");
-      projects.forEach(function (p) { list.appendChild(buildProject(p)); });
-      wk.appendChild(list);
-    }
-
-    return wk;
-  }
-
-  /* ---- right column: about + work ---------------------- */
-  function buildContent() {
+  function buildMain() {
     var f = document.createDocumentFragment();
-
-    // about
-    var about = (cfg.about || []).filter(Boolean);
-    if (about.length) {
-      var ab = el("section", "block about reveal");
-      ab.appendChild(el("div", "eyebrow", "About"));
-      about.forEach(function (line, i) {
-        ab.appendChild(el("p", i === 0 ? "lede" : "dim", esc(line)));
-      });
-      f.appendChild(ab);
-    }
-
-    // work, grouped into categories (rail-flagged categories render elsewhere)
-    contentWork.forEach(function (group) {
-      var wk = buildWorkSection(group);
-      if (wk) f.appendChild(wk);
+    work.forEach(function (group) {
+      var sec = buildWorkSection(group);
+      if (sec) f.appendChild(sec);
     });
+    var sn = buildSnippets();
+    if (sn) f.appendChild(sn);
+    f.appendChild(buildContact());
+    $main.appendChild(f);
+  }
 
-    // footer
-    var foot = el("footer", "foot reveal");
-    foot.appendChild(el("span", null, esc(cfg.footer || "")));
-    var top = el("a", null, "Back to top ↑");
+  function buildFoot() {
+    $foot.appendChild(el("span", null, esc(cfg.footer || cfg.brand || "")));
+    var top = el("a", null, "back to top ↑");
     top.href = "#";
     top.addEventListener("click", function (e) {
       e.preventDefault();
-      if (lenis) { lenis.scrollTo(0); return; }
       window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
     });
-    foot.appendChild(top);
-    f.appendChild(foot);
-
-    $content.appendChild(f);
+    $foot.appendChild(top);
   }
 
-  /* ---- scroll-triggered reveal ------------------------- */
-  // Items animate in as they scroll into view. Whatever is already on
-  // screen at load cascades in with a small stagger; everything below the
-  // fold waits until you scroll to it.
-  function reveal() {
-    var items = Array.prototype.slice.call(document.querySelectorAll(".reveal"));
-    if (reduce || !("IntersectionObserver" in window)) {
-      items.forEach(function (n) { n.classList.add("in"); });
-      return;
-    }
-
-    var io = new IntersectionObserver(function (entries, obs) {
-      entries.forEach(function (e) {
-        if (!e.isIntersecting) return;
-        var n = e.target;
-        var delay = Number(n.getAttribute("data-reveal-delay")) || 0;
-        setTimeout(function () { n.classList.add("in"); }, delay);
-        obs.unobserve(n);
-      });
-    }, { rootMargin: "0px 0px -10% 0px", threshold: 0.06 });
-
-    // stagger only the items visible on first paint for a clean load cascade
-    var vh = window.innerHeight || document.documentElement.clientHeight;
-    var visible = 0;
-    items.forEach(function (n) {
-      if (n.getBoundingClientRect().top < vh * 0.92) {
-        n.setAttribute("data-reveal-delay", String(70 + visible * 80));
-        visible++;
-      }
-      io.observe(n);
-    });
-  }
-
-  /* ---- smooth wheel scrolling (Lenis) ------------------ */
-  function initSmoothScroll() {
-    if (reduce || !window.Lenis) return null;
-    var ls = new window.Lenis({
-      duration: 1.05,
-      easing: function (t) { return 1 - Math.pow(1 - t, 3); },  // easeOutCubic
-      smoothWheel: true,     // ease the mouse wheel
-      syncTouch: false,      // leave touch devices on native momentum
-    });
-    function raf(time) { ls.raf(time); requestAnimationFrame(raf); }
-    requestAnimationFrame(raf);
-    return ls;
-  }
-
-  /* ---- start ------------------------------------------- */
-  lenis = initSmoothScroll();
-  buildRail();
-  buildContent();
-  document.title = cfg.brand || cfg.name || "Portfolio";
-  requestAnimationFrame(reveal);
+  buildHero();
+  buildMain();
+  buildFoot();
 })();

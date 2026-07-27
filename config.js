@@ -6,9 +6,9 @@
 
 window.CONFIG = {
   /* ---- identity ------------------------------------------- */
-  name:     "",                          // big name on the left. "" to hide it
+  name:     "blessedlua",                // big name up top. "" to hide it
   brand:    "portfolio blessedlua",      // browser tab title + top-left of the page
-  role:     "contact me",                // heading shown on the left
+  role:     "roblox scripter & game programmer",
   accent:   "#e0a85c",                   // optional: any CSS color for the accent
 
   /* ---- clock (top-right) --------------------------------- */
