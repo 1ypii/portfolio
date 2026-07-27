@@ -16,11 +16,6 @@ window.CONFIG = {
   timezone:  "Asia/Almaty",              // IANA timezone
   timeLabel: "almaty kazakhstan",        // label shown next to the time
 
-  /* ---- announcements (little tab up top) ----------------- */
-  // Say whatever you want here — each string is one announcement.
-  // Newest first reads best. Set to [] to hide the tab entirely.
-  announcements: [],
-
   /* ---- a 'now' status line (optional) -------------------- */
   // The "currently…" bit. Set to "" to hide it.
   now: "",

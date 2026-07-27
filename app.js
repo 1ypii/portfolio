@@ -56,15 +56,6 @@
 
   document.title = cfg.brand || cfg.name || "portfolio";
 
-  (function () {
-    var items = (cfg.announcements || []).filter(Boolean);
-    if (!items.length) return;
-    var box = document.getElementById("announce");
-    box.appendChild(el("span", "announce-tag", "announcements"));
-    items.forEach(function (a) { box.appendChild(el("div", null, esc(a))); });
-    box.hidden = false;
-  })();
-
   function placeIdFromUrl(url) {
     var m = String(url || "").match(/roblox\.com\/games\/(\d+)/);
     return m ? m[1] : null;
@@ -186,7 +177,7 @@
   function buildGallery(g) {
     var vids = (g.videos || []).filter(Boolean);
     var sec = el("div", "gallery");
-    if (g.label) sec.appendChild(el("div", "sublabel", "<b>" + esc(g.label) + "</b> — " + vids.length));
+    if (g.label) sec.appendChild(el("div", "sublabel", "<b>" + esc(g.label) + "</b>"));
     var grid = el("div", "reel");
     vids.forEach(function (item, i) {
       var p = (typeof item === "string") ? { video: item } : item;
