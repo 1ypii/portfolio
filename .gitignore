@@ -14,3 +14,9 @@ node_modules/
 credentials.txt
 *token*
 *.key
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
