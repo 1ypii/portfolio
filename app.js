@@ -64,13 +64,6 @@
     var m = String(url || "").match(/roblox\.com\/communities\/(\d+)/);
     return m ? m[1] : null;
   }
-  function siteData(url) {
-    var w = window.WEBSITES_DATA || {};
-    if (w[url]) return w[url];
-    var alt = url && (url.charAt(url.length - 1) === "/" ? url.slice(0, -1) : url + "/");
-    return (alt && w[alt]) || null;
-  }
-
   var work = (cfg.work || []).filter(Boolean);
 
   function tally() {
@@ -264,26 +257,6 @@
     return row;
   }
 
-  function buildSiteCard(p, s) {
-    var card = el("a", "site-card");
-    card.href = p.url; card.target = "_blank"; card.rel = "noopener noreferrer";
-    if (s.image) {
-      var img = el("img", "site-shot");
-      img.src = s.image; img.loading = "lazy"; img.alt = "";
-      card.appendChild(img);
-    }
-    var meta = el("div", "site-meta");
-    var top = el("div", "row-top");
-    top.appendChild(el("span", "row-title", esc(p.title || s.title || s.domain)));
-    top.appendChild(el("span", "row-arrow", "↗"));
-    meta.appendChild(top);
-    if (s.domain) meta.appendChild(el("div", "site-domain", esc(s.domain)));
-    var d = p.description || s.desc;
-    if (d) meta.appendChild(el("p", "row-desc", esc(d)));
-    card.appendChild(meta);
-    return card;
-  }
-
   function buildPlainRow(p) {
     var row = el("article", "row");
     var body = el("div", "row-body");
@@ -311,8 +284,6 @@
     if (pid && (window.GAMES_DATA || {})[pid]) return buildGameRow(p, window.GAMES_DATA[pid]);
     var gid = groupIdFromUrl(p.url);
     if (gid && (window.GROUPS_DATA || {})[gid]) return buildGroupRow(p, window.GROUPS_DATA[gid]);
-    var sd = siteData(p.url);
-    if (sd) return buildSiteCard(p, sd);
     return buildPlainRow(p);
   }
 

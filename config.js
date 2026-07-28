@@ -163,17 +163,6 @@ window.CONFIG = {
         { url: "https://www.roblox.com/communities/3723250/Tetranova-Software#!/about" },
       ],
     },
-    {
-      category: "websites",
-      // `rail: true` moves this category — and every category after it —
-      // into the left rail, below the code snippets.
-      rail: true,
-      // auto-enriched from websites-data.js (screenshot + title + description).
-      // add `title` / `description` here to override the auto-detected ones.
-      projects: [
-        { url: "https://xd-dpl.pages.dev/" },
-      ],
-    },
   ],
 
   /* ---- footer ------------------------------------------- */
