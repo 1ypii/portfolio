@@ -8,7 +8,7 @@ window.CONFIG = {
   /* ---- identity ------------------------------------------- */
   name:     "",                          // big name up top. "" to hide it
   brand:    "portfolio blessedlua",      // browser tab title + top-left of the page
-  role:     "roblox scripter & game programmer",
+  role:     "polyglot programmer",
   accent:   "#e0a85c",                   // optional: any CSS color for the accent
 
   /* ---- clock (top-right) --------------------------------- */
@@ -22,9 +22,7 @@ window.CONFIG = {
 
   /* ---- about / bio --------------------------------------- */
   // First line is the lede (brighter); the rest are supporting lines.
-  about: [
-    "hello im a programmer",
-  ],
+  about: [],
 
   /* ---- socials / contact (shown in the left rail) -------- */
   // The main reason people land here. Add/remove freely.
@@ -96,7 +94,7 @@ window.CONFIG = {
   // A project can have a video, a url, both, or neither.
   work: [
     {
-      category: "roblox",
+      category: "videos",
       // labelled video galleries shown as grids under the Roblox heading.
       // each entry is just the path to a file in /assets. add a { video, caption }
       // object instead of a bare string if you want a small caption.

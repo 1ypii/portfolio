@@ -84,10 +84,8 @@ a { color: inherit; }
   transition: background .12s ease, color .12s ease, border-color .12s ease;
 }
 .chip svg { width: 15px; height: 15px; fill: var(--mut); transition: fill .12s ease; }
-.chip:hover, .chip:focus-visible {
-  background: var(--ink); color: var(--bg); border-color: var(--ink);
-}
-.chip:hover svg, .chip:focus-visible svg { fill: var(--bg); }
+.chip:hover, .chip:focus-visible { border-color: var(--ink); }
+.chip:hover svg, .chip:focus-visible svg { fill: var(--ink); }
 
 .secnav {
   position: sticky; top: 0; z-index: 10;
