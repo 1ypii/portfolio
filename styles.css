@@ -41,20 +41,26 @@ a { color: inherit; }
 
 #hero { padding: clamp(40px, 8vh, 96px) 0 clamp(32px, 5vh, 56px); }
 
-@keyframes hero-stretch {
-  from { opacity: 0; font-stretch: 75%; letter-spacing: 0.04em; }
-  to   { opacity: 1; font-stretch: 112%; letter-spacing: -0.02em; }
+.veil {
+  position: fixed; inset: 0; z-index: 50;
+  background: var(--bg);
+  border-bottom: 1px solid var(--rule);
 }
+.veil.is-up {
+  transform: translateY(-101%);
+  transition: transform .65s cubic-bezier(.7, 0, .2, 1);
+}
+
 @keyframes hero-rise {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: none; }
 }
-#hero .name  { animation: hero-rise .6s cubic-bezier(.2,.7,.2,1) both; }
-#hero .role  { animation: hero-rise .5s ease .15s both; }
-#hero .role:first-child { animation: hero-stretch .8s cubic-bezier(.2,.7,.2,1) both; }
-#hero .stats { animation: hero-rise .5s ease .45s both; }
-#hero .chips { animation: hero-rise .5s ease .6s both; }
+#hero .name  { animation: hero-rise .6s cubic-bezier(.2,.7,.2,1) .2s both; }
+#hero .role  { animation: hero-rise .45s ease .25s both; }
+#hero .stats { animation: hero-rise .5s ease .55s both; }
+#hero .chips { animation: hero-rise .5s ease .7s both; }
 @media (prefers-reduced-motion: reduce) {
+  .veil { display: none; }
   #hero .name, #hero .role, #hero .stats, #hero .chips { animation: none; }
 }
 

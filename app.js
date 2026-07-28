@@ -551,8 +551,38 @@
     }
   }
 
+  function intro() {
+    var veil = document.getElementById("veil");
+    if (reduce) { if (veil) veil.remove(); return; }
+
+    if (veil) {
+      setTimeout(function () { veil.classList.add("is-up"); }, 150);
+      setTimeout(function () { veil.remove(); }, 1000);
+    }
+
+    var role = $hero.querySelector(".role");
+    if (!role) return;
+    var text = role.textContent;
+    var glyphs = "abcdefghijklmnopqrstuvwxyz<>/{}[]#&*";
+    var frames = 22, frame = 0;
+    setTimeout(function () {
+      var iv = setInterval(function () {
+        frame++;
+        var settled = Math.floor(text.length * frame / frames);
+        if (settled >= text.length) { clearInterval(iv); role.textContent = text; return; }
+        var out = "";
+        for (var i = 0; i < text.length; i++) {
+          out += (i < settled || text[i] === " ") ? text[i]
+               : glyphs[Math.floor(Math.random() * glyphs.length)];
+        }
+        role.textContent = out;
+      }, 40);
+    }, 300);
+  }
+
   buildHero();
   buildMain();
   buildNav();
   buildFoot();
+  intro();
 })();
