@@ -8,7 +8,7 @@ window.CONFIG = {
   /* ---- identity ------------------------------------------- */
   name:     "",                          // big name up top. "" to hide it
   brand:    "portfolio blessedlua",      // browser tab title + top-left of the page
-  role:     "polyglot programmer",
+  role:     "game programmer",
   accent:   "#e0a85c",                   // optional: any CSS color for the accent
 
   /* ---- clock (top-right) --------------------------------- */
